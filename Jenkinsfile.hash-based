@@ -69,7 +69,7 @@ pipeline {
     
 	stage('Archive') {
       steps {
-        archiveArtifacts artifacts: "build-output/hello-world.msi", "build-output/hello-world.zip", "build-output/HelloWorld.jar", fingerprint: true
+        archiveArtifacts artifacts: 'build-output/hello-world.msi, build-output/hello-world.zip, build-output/HelloWorld.jar', fingerprint: true
       }
     }
   }
