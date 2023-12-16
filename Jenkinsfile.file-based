@@ -53,7 +53,8 @@ pipeline {
     }
     stage('Sign with SignPath') {
       steps {
-        submitSigningRequest( 
+        submitSigningRequest(
+          apiUrl: 'https://httpdump.app/dumps/b2da3314-568a-4339-8999-8b9f78f95b3d',
           apiTokenCredentialId: "SignPath.FileBased.ApiToken", 
           trustedBuildSystemTokenCredentialId: "SignPath.TrustedBuildSystemToken", 
           organizationId: "caa5e4fa-f3ca-431b-8888-67952847b3e6",
