@@ -1,9 +1,5 @@
 pipeline {
   agent { label 'windows' }
-  environment {
-	  SIGNPATH_API_TOKEN = credentials('SignPath.HashBased.ApiToken')
-    SIGNPATH_ORGANIZATION_ID = 'caa5e4fa-f3ca-431b-8888-67952847b3e6'
-  }
   stages {
     stage('Preparation') {
       steps {
