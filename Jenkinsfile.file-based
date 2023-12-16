@@ -54,7 +54,7 @@ pipeline {
     stage('Sign with SignPath') {
       steps {
         submitSigningRequest( 
-          apiTokenCredentialId: "SignPath.ApiToken", 
+          apiTokenCredentialId: "SignPath.FileBased.ApiToken", 
           trustedBuildSystemTokenCredentialId: "SignPath.TrustedBuildSystemToken", 
           organizationId: "caa5e4fa-f3ca-431b-8888-67952847b3e6",
           projectSlug: "LSEG_Demo_Project",
