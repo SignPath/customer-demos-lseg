@@ -49,11 +49,8 @@ pipeline {
             Compress-Archive -Path build-output/hello-world.msi, build-output/hello-world.zip build-output/HelloWorld.jar `
               -DestinationPath build-output/combined-artifact-unsigned.zip
           '''
-        }
-        steps {
           archiveArtifacts artifacts: 'build-output/combined-artifact-unsigned.zip', fingerprint: true
         }
-      }
     }
     stage('Sign with SignPath') {
       steps {
