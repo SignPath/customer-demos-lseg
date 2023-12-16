@@ -3,3 +3,4 @@ VisualStudioSigning/bin
 VisualStudioSigning/obj
 VisualStudioSigning/*.csproj.user
 build-output
+.keys
