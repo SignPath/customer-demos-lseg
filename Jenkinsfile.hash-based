@@ -6,7 +6,9 @@ pipeline {
   }
   stages {
     stage('Preparation') {
-      powershell 'New-Item -ItemType Directory build-output'
+      steps {
+        powershell 'New-Item -ItemType Directory build-output'
+      }
     }
     stage('Build and sign with signtool.exe') {
       steps {
