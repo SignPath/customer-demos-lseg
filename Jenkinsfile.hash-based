@@ -33,7 +33,7 @@ pipeline {
         powershell '''
           # 1) Download certificate (required for mage.exe)
           Invoke-WebRequest -Headers @{ 'Authorization'="Bearer ${env:SIGNPATH_API_TOKEN}" } `
-            -Uri "https://app.signpath.io/Api/v1-pre/${env:SIGNPATH_ORGANIZATION_ID}/Certificates/Release_Certificate/X509Certificate' `
+            -Uri "https://app.signpath.io/Api/v1-pre/${env:SIGNPATH_ORGANIZATION_ID}/Certificates/Release_Certificate/X509Certificate" `
             -OutFile build-output/cert.cer
           # 2) Create clickOnce application
           New-Item -ItemType Directory build-output/clickonce
