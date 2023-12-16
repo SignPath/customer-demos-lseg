@@ -1,0 +1,5 @@
+VisualStudioSigning/*.vs
+VisualStudioSigning/bin
+VisualStudioSigning/obj
+VisualStudioSigning/*.csproj.user
+build-output

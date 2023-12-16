@@ -1,0 +1,74 @@
+pipeline {
+  agent { label 'labelName' }
+  environment {
+	 SIGNPATH_API_TOKEN = credentials('SignPath.HashBased.ApiToken')
+   SIGNPATH_ORGANIZATION_ID = 
+  }
+  stages {
+    stage('Preparation') {
+      powershell 'New-Item -ItemType Directory build-output'
+    }
+    stage('Build and sign with signtool.exe') {
+      steps {
+          powershell '''
+            # 1) Compile hello-world.exe
+            csc.exe -out:"build-output/hello-world.exe" "src/signtool/HelloWorld.cs"
+            # 2) Sign hello-world-exe
+            signtool.exe sign /a /n "SignPath GmbH (Demo)" /td SHA256 /fd SHA256 /tr http://timestamp.digicert.com build-output/hello-world.exe
+            # 3) Build hello-world.msi installer
+            candle "src/signtool/HelloWorld.wxs" -o "build-output/HelloWorld.wixobj"
+            light -spdb ./build-output/HelloWorld.wixobj -o ./build-output/hello-world.msi
+            # 4) Sign hello-world.msi installer
+            signtool.exe sign /a /n "SignPath GmbH (Demo)" /td SHA256 /fd SHA256 /tr http://timestamp.digicert.com build-output/hello-world.msi
+            # 5) Verification
+            signtool verify /pa .build-output/hello-world.exe
+            signtool verify /pa .build-output/hello-world.msi
+          '''
+      }
+    }
+    stage('Build and sign with mage') {
+      steps {
+        powershell '''
+          # 1) Download certificate (required for mage.exe)
+          curl -sL --output build-output/cert.cer -H "Authorization: Bearer $($Env:SIGNPATH_API_TOKEN)" `
+              "https://app.signpath.io/Api/v1-pre/$($Env:SIGNPATH_ORGANIZATION_ID)/Certificates/Release_Certificate/X509Certificate"
+          # 2) Create clickOnce application
+          New-Item -ItemType Directory build-output/clickonce
+          Copy-Item build-output/hello-world.exe build-output/clickonce/hello-world.exe
+          mage.exe -New Application -FromDirectory build-output/clickonce -Name "Hello, World! Application" -Version 1.0.0.0 `
+            -ToFile build-output/clickonce/application.exe.manifest
+          # 3) Sign it
+          mage.exe -Sign build-output/clickonce/application.exe.manifest -CertFile build-output/cert.cer `
+            -CryptoProvider "SignPathCSP" -KeyContainer "Hash_Signing/release-signing"
+          # 4) Verify the signatures
+          mage.exe -Verify build-output/clickonce/application.exe.manifest
+          # 5) Zip it for upload
+          Compress-Archive -Path build-output/clickonce -DestinationPath build-output/hello-world.zip
+        '''
+      }
+    }
+    stage('Build and sign with jarsigner') {
+      steps {
+		    powershell '''
+          # 1) Create java archive
+          javac src/jarsigner/HelloWorld.java -d build-output
+          jar cfm build-output/HelloWorld.jar src/jarsigner/Manifest.txt -C build-output HelloWorld.class
+          # 2) Sign archive
+          jarsigner.exe `
+            -keystore NONE -storetype PKCS11 -providerClass sun.security.pkcs11.SunPKCS11 -providerArg ./src/jarsigner/pkcs11.config -storepass CONFIG `
+            -digestalg SHA-256 -sigalg SHA256withRSA `
+            -sigfile SignPath `
+            build-output/HelloWorld.jar "Hash_Signing/release-signing" -tsa http://timestamp.digicert.com/
+          # 3) Verify it
+          jarsigner -verify -keystore NONE -storetype Windows-MY -verbose build-output/HelloWorld.jar
+        '''
+      }
+    }
+    
+	stage('Archive') {
+      steps {
+        archiveArtifacts artifacts: "build-output/hello-world.msi", "build-output/hello-world.zip," "build-output/HelloWorld.jar", fingerprint: true
+      }
+    }
+  }
+}
