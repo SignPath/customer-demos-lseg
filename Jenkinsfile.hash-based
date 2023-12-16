@@ -1,7 +1,7 @@
 pipeline {
   agent { label 'windows' }
   environment {
-	  SIGNPATH_API_TOKEN = credentials('SignPath.HashBased.ApiToken')
+	  SIGNPATH_API_TOKEN = credentials('SignPath.ApiToken')
     SIGNPATH_ORGANIZATION_ID = 'caa5e4fa-f3ca-431b-8888-67952847b3e6'
   }
   stages {
@@ -67,11 +67,10 @@ pipeline {
         '''
       }
     }
-    
-	stage('Archive') {
-      steps {
-        archiveArtifacts artifacts: 'build-output/hello-world.msi, build-output/hello-world.zip, build-output/HelloWorld.jar', fingerprint: true
+  	stage('Archive') {
+        steps {
+          archiveArtifacts artifacts: 'build-output/hello-world.msi, build-output/hello-world.zip, build-output/HelloWorld.jar', fingerprint: true
+        }
       }
     }
-  }
 }

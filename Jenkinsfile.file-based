@@ -1,0 +1,73 @@
+pipeline {
+  agent { label 'windows' }
+  environment {
+	  SIGNPATH_API_TOKEN = credentials('SignPath.HashBased.ApiToken')
+    SIGNPATH_ORGANIZATION_ID = 'caa5e4fa-f3ca-431b-8888-67952847b3e6'
+  }
+  stages {
+    stage('Preparation') {
+      steps {
+        powershell 'New-Item -ItemType Directory build-output'
+      }
+    }
+    stage('Build installer') {
+      steps {
+          powershell '''
+            # 1) Compile hello-world.exe
+            csc.exe -out:"build-output/hello-world.exe" "src/signtool/HelloWorld.cs"
+            # 2) Build hello-world.msi installer
+            candle "src/signtool/HelloWorld.wxs" -o "build-output/HelloWorld.wixobj"
+            light -spdb ./build-output/HelloWorld.wixobj -o ./build-output/hello-world.msi
+          '''
+      }
+    }
+    stage('Build clickonce') {
+      steps {
+        powershell '''
+          # 1) Create clickOnce application
+          New-Item -ItemType Directory build-output/clickonce
+          Copy-Item build-output/hello-world.exe build-output/clickonce/hello-world.exe
+          mage.exe -New Application -FromDirectory build-output/clickonce -Name "Hello, World! Application" -Version 1.0.0.0 `
+            -ToFile build-output/clickonce/application.exe.manifest
+          # 2) Zip it for upload
+          Compress-Archive -Path build-output/clickonce -DestinationPath build-output/hello-world.zip
+        '''
+      }
+    }
+    stage('Build java archive') {
+      steps {
+		    powershell '''
+          # 1) Create java archive
+          javac src/jarsigner/HelloWorld.java -d build-output
+          jar cfm build-output/HelloWorld.jar src/jarsigner/Manifest.txt -C build-output HelloWorld.class
+        '''
+      }
+    }
+    stage('Archive unsigned') {
+        steps {
+          powershell '''
+            Compress-Archive -Path build-output/hello-world.msi, build-output/hello-world.zip build-output/HelloWorld.jar `
+              -DestinationPath build-output/combined-artifact-unsigned.zip
+          '''
+        }
+        steps {
+          archiveArtifacts artifacts: 'build-output/combined-artifact-unsigned.zip', fingerprint: true
+        }
+      }
+    }
+    stage('Sign with SignPath') {
+      steps {
+        submitSigningRequest( 
+          apiTokenCredentialId: "SignPath.ApiToken", 
+          trustedBuildSystemTokenCredentialId: "SignPath.TrustedBuildSystemToken", 
+          organizationId: "caa5e4fa-f3ca-431b-8888-67952847b3e6",
+          projectSlug: "LSEG_Demo_Project",
+          signingPolicySlug: "release-signing",
+          inputArtifactPath: "build-output/combined-artifact-unsigned.zip",
+          outputArtifactPath: "build-output/combined-artifact-signed.zip",
+          waitForCompletion: true
+        )
+      }
+    }
+  	
+}
