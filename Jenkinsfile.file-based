@@ -7,7 +7,10 @@ pipeline {
   stages {
     stage('Preparation') {
       steps {
-        powershell 'New-Item -ItemType Directory build-output'
+        powershell '''
+          Remove-Item -Path build-output -Force -Recurse
+          New-Item -ItemType Directory build-output
+        '''
       }
     }
     stage('Build installer') {
